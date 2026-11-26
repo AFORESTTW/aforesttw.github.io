@@ -19,7 +19,8 @@
 - 「匯出檔案」存成 .json，「匯入檔案」打開；「匯出圖片」存目前視角的 PNG
 
 ## 版本
-- `index.html`：最新版（v4）
+- `index.html`：最新版（v5）
+- `versions/v5.html`：v5，檔案庫拿掉「存成新版本」按鈕，避免不小心存進已開啟的檔案
 - `versions/v4.html`：v4，共用檔案庫（Cloudflare D1）、存檔鈕、版本紀錄、最近刪除
 - `versions/v3.html`：v3，方案可存本機、方案檔匯出／匯入、本機下載圖片
 - `versions/v2.html`：v2，3D 引擎內嵌，修正 Claude App 內無法載入

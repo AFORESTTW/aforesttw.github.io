@@ -124,6 +124,14 @@ input[type=text],input[type=number],select{height:44px;border-radius:10px;border
 .pl .pn small{color:var(--mute);font-size:13px}
 .pl .cur b{color:var(--acc)}
 .tb.dz{color:var(--warn)}
+.pl .tb{padding:0 10px;flex:none}
+.tagnew{font-style:normal;color:var(--brown)}
+.conf{border:1.5px solid var(--warn);border-radius:12px;padding:10px 12px;margin:10px 0}
+.conf b{color:var(--warn)}
+.fl{display:block;font-size:13px;color:var(--mute);margin:10px 0 0}
+.fl input{margin-top:4px}
+.linkb{background:none;border:0;color:var(--acc);min-height:44px;padding:0 2px;font-weight:500}
+.ttl h1{overflow:hidden;text-overflow:ellipsis}
 .form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .form label{display:flex;flex-direction:column;font-size:13px;color:var(--mute);gap:4px}
 .form .w2{grid-column:span 2}
@@ -168,7 +176,8 @@ window.addEventListener('error',function(e){if(!e.message||e.message==='Script e
     <div class="tools">
       <button class="ib" id="undo" aria-label="復原" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 7 4.5 11.5 9 16"/><path d="M5 11.5h9a5 5 0 0 1 0 10h-2"/></svg></button>
       <button class="ib" id="redo" aria-label="重做" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M15 7l4.5 4.5L15 16"/><path d="M19 11.5h-9a5 5 0 0 0 0 10h2"/></svg></button>
-      <button class="tb" id="plansBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span class="l">方案</span></button>
+      <button class="tb pri" id="saveBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span class="l">存檔</span></button>
+      <button class="tb" id="plansBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 6.5h6l2 2h9v10.5h-17z"/></svg><span class="l">檔案庫</span></button>
       <button class="tb" id="exportBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M4.5 16v3.5h15V16"/></svg><span class="l">匯出圖片</span></button>
     </div>
   </header>
@@ -4126,7 +4135,7 @@ const COLORS={white:'#f3f1eb',wood:'#d9c19c',greywood:'#a49e93',table:'#e3e0d8',
 const CUSTOM_COLS=['#e8d9c0','#c9d6cf','#d8c8d8','#cfd6e4','#e6cdb8'];
 
 /* ---------- 狀態 ---------- */
-const S={items:[],custom:[],sel:null,uid:1,wallMode:'glass',tags:true,snap:true,plan:{id:null,name:''},dirty:false,bad:new Set()};
+const S={items:[],custom:[],sel:null,uid:1,wallMode:'glass',tags:true,snap:true,plan:{id:null,name:'',src:''},dirty:false,bad:new Set()};
 const catOf=(code,custom=S.custom)=>CAT.find(c=>c.code===code)||custom.find(c=>c.code===code);
 function dims(it){const c=catOf(it.code)||{w:40,d:40,h:40};let w=c.w/100,d=c.d/100,h=c.h/100;if(it.orient===1)[d,h]=[h,d];else if(it.orient===2)[w,h]=[h,w];return{w,d,h}}
 const kindOf=it=>(catOf(it.code)||{}).kind||'box';
@@ -4297,9 +4306,9 @@ function clean(d){const num=(v,f=0)=>Number.isFinite(+v)?+v:f;
   return{items,custom}}
 const DRAFT='exhibit-layout-planner:draft:v1';
 function saveDraft(){try{localStorage.setItem(DRAFT,JSON.stringify({data:JSON.parse(snapshot()),plan:S.plan,dirty:S.dirty,wallMode:S.wallMode}))}catch(e){}}
-function loadDraft(){try{const r=JSON.parse(localStorage.getItem(DRAFT)||'null');if(!r)return false;applyData(clean(r.data));S.plan=r.plan&&typeof r.plan==='object'?{id:typeof r.plan.id==='string'?r.plan.id:null,name:String(r.plan.name||'').slice(0,40)}:{id:null,name:''};S.dirty=!!r.dirty;if(['glass','solid','low'].includes(r.wallMode))S.wallMode=r.wallMode;return true}catch(e){return false}}
+function loadDraft(){try{const r=JSON.parse(localStorage.getItem(DRAFT)||'null');if(!r)return false;applyData(clean(r.data));S.plan=r.plan&&typeof r.plan==='object'?{id:typeof r.plan.id==='string'?r.plan.id:null,name:String(r.plan.name||'').slice(0,40),vid:Number.isInteger(r.plan.vid)?r.plan.vid:null,src:['team','cloud','local'].includes(r.plan.src)?r.plan.src:''}:{id:null,name:'',src:''};S.dirty=!!r.dirty;if(['glass','solid','low'].includes(r.wallMode))S.wallMode=r.wallMode;return true}catch(e){return false}}
 function refreshUI(){$('#undo').disabled=hi<=0;$('#redo').disabled=hi>=hist.length-1;const st=$('#status');
-  st.textContent=S.plan.id?`${S.plan.name} · ${S.dirty?'有未儲存的變更':'已儲存'}`:(S.items.length?'本機草稿 · 尚未存成方案':'本機草稿');st.classList.toggle('dirty',!!S.plan.id&&S.dirty);renderSide()}
+  st.textContent=S.plan.id&&S.plan.name?`${S.plan.name} · ${S.dirty?'有未存檔的變更':'已存檔'}`:S.plan.name?`${S.plan.name} · 還沒存檔`:(S.items.length?'還沒存檔':'空白場地');st.classList.toggle('dirty',S.dirty&&S.items.length>0);renderSide()}
 
 /* ---------- 側欄 ---------- */
 const list=$('#list');
@@ -4418,17 +4427,35 @@ $('#viewbar').addEventListener('click',e=>{const b=e.target.closest('button');if
   else if(v==='help'){const h=$('#help');h.hidden=!h.hidden}});
 window.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('input,select,textarea')||!$('#modal').hidden)return;const k=e.key.toLowerCase();
   if((e.metaKey||e.ctrlKey)&&k==='z'){e.preventDefault();e.shiftKey?redo():undo();return}
+  if((e.metaKey||e.ctrlKey)&&k==='s'){e.preventDefault();quickSave();return}
   if(!selItem())return;if(k==='delete'||k==='backspace'){e.preventDefault();act('del')}else if(k==='r')act(e.shiftKey?'rl':'rr');else if(k==='f')act('flip');else if(k==='escape')select(null)});
 let tt=0;function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2200)}
 
-/* ---------- 方案（雲端或本機）、檔案匯出入、自訂器材 ---------- */
+/* ---------- 檔案庫（共用資料庫／Claude 雲端／本機）、檔案匯出入、自訂器材 ---------- */
+const API_BASE='https://exhibit-layout.forest31345.workers.dev';
 let DB=null,DL=null,UID=null,CANW=null,CLOUD=[],plansState='loading',modalKind=null,busy=false;
 const STANDALONE=!(window.claude&&typeof window.claude.use==='function');
-const LKEY='exhibit-layout-planner:plans:v1';
+let TEAM=STANDALONE?'idle':'off';
+const TL={rows:null,err:false,view:'list',pid:null,pname:'',vrows:null,trash:null,conflict:null};
+const LKEY='exhibit-layout-planner:plans:v1',AKEY='exhibit-layout-planner:author';
 function localPlans(){try{const a=JSON.parse(localStorage.getItem(LKEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return null}}
 function setLocalPlans(a){try{localStorage.setItem(LKEY,JSON.stringify(a));return true}catch(e){return false}}
-const storeMode=()=>DB?'cloud':(!STANDALONE&&plansState==='loading')?'loading':localPlans()!==null?'local':'none';
+const getAuthor=()=>{try{return localStorage.getItem(AKEY)||''}catch(e){return''}};
+const setAuthor=v=>{try{localStorage.setItem(AKEY,v)}catch(e){}};
+function storeMode(){if(DB)return'cloud';if(STANDALONE){if(TEAM==='ok')return'team';if(TEAM==='idle'||TEAM==='checking')return'loading'}else if(plansState==='loading')return'loading';return localPlans()!==null?'local':'none'}
 function plansList(){if(DB)return CLOUD;return(localPlans()||[]).filter(p=>p&&typeof p.id==='string').map(p=>({id:p.id,data:p})).sort((x,y)=>(+y.data.updatedAt||0)-(+x.data.updatedAt||0))}
+const newId=()=>{const a=new Uint8Array(12);crypto.getRandomValues(a);let s='';for(const v of a)s+='abcdefghijklmnopqrstuvwxyz0123456789'[v%36];return s};
+const payload=()=>{const d=JSON.parse(snapshot());return{items:d.items,custom:d.custom}};
+async function api(path,opt={},retry=true){const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),15000);
+  try{const r=await fetch(API_BASE+path,{method:opt.method||'GET',headers:opt.body?{'Content-Type':'application/json'}:undefined,body:opt.body?JSON.stringify(opt.body):undefined,signal:ctl.signal,cache:'no-store'});
+    const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||('HTTP '+r.status));e.status=r.status;e.body=j;throw e}return j}
+  catch(e){if(retry&&!e.status){clearTimeout(t);await new Promise(res=>setTimeout(res,1500));return api(path,opt,false)}throw e}
+  finally{clearTimeout(t)}}
+const teamErr=e=>e&&e.status?`存檔失敗：${e.message||e.status}`:'連不到檔案庫，檢查網路後再試一次（目前內容已暫存在這台裝置）';
+async function checkTeam(){if(!STANDALONE||TEAM==='checking')return;TEAM='checking';if(modalKind==='plans')renderPlans();
+  try{await api('/health',{},false);TEAM='ok'}catch(e){TEAM='down'}refreshUI();if(modalKind==='plans'){renderPlans();if(TEAM==='ok')loadTeamList()}}
+async function loadTeamList(){try{const j=await api('/plans');TL.rows=Array.isArray(j.plans)?j.plans:[];TL.err=false}catch(e){TL.err=true}if(modalKind==='plans')renderPlans()}
+function saveFileOK(){return!!DL||STANDALONE}
 async function saveFile(name,data){
   if(DL){try{await DL.save({filename:name,data});return'ok'}catch(e){const c=e&&e.code;return c==='declined'?'cancel':c==='host_unavailable'?'host':'fail'}}
   if(STANDALONE){try{const a=document.createElement('a');a.href=URL.createObjectURL(data);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000);return'ok'}catch(e){return'fail'}}
@@ -4437,46 +4464,101 @@ const fileMsg={cancel:'已取消',host:'這個 App 不能存檔，請改用瀏�
 const safeName=n=>String(n||'').replace(/[\\/:*?"<>|]/g,'').trim().slice(0,40);
 const modal=$('#modal'),mBody=$('#mBody');
 function openModal(kind,title){modalKind=kind;$('#mTitle').textContent=title;modal.hidden=false;renderModal()}
-function closeModal(){modal.hidden=true;modalKind=null}
+function closeModal(){modal.hidden=true;modalKind=null;TL.conflict=null}
+function openLibrary(){TL.view='list';openModal('plans','檔案庫');if(STANDALONE){if(TEAM==='ok')loadTeamList();else checkTeam()}}
 $('#mClose').onclick=closeModal;modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
-$('#plansBtn').onclick=()=>openModal('plans','方案');
+$('#plansBtn').onclick=openLibrary;$('#saveBtn').onclick=quickSave;
 function renderModal(){if(modalKind==='plans')renderPlans();else if(modalKind==='custom')renderCustom()}
 const fmtT=t=>{try{return new Date(t).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return''}};
-const defName=()=>{const d=new Date();return`方案 ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
-function renderPlans(){const m=storeMode(),ro=m==='cloud'&&CANW===false,list=plansList();
-  let h=`<p class="note">目前：<b>${esc(S.plan.name||'未命名')}</b>${S.plan.id?(S.dirty?' · 有未儲存的變更':' · 已儲存'):' · 尚未存成方案'}</p>`;
-  h+=`<p class="note">${m==='cloud'?'方案存在這個頁面的雲端資料庫：分享頁面後，對方也看得到、能載入。':m==='local'?'方案存在這台裝置的瀏覽器裡，換裝置或換瀏覽器就看不到。要備份或傳給別人，用下面的「匯出方案檔」。':m==='loading'?'正在連線雲端方案…':'這個檢視沒辦法存方案，請用「匯出方案檔」保存。'}</p>`;
-  if(ro)h+='<p class="note">你目前只有檢視權限，可以載入方案，不能儲存。</p>';
-  else if(m==='cloud'||m==='local'){h+=`<div class="row2"><input type="text" id="pName" maxlength="40" placeholder="${esc(defName())}" value="${esc(S.plan.id?'':S.plan.name)}" aria-label="方案名稱"><button class="tb pri" data-p="new"${busy?' disabled':''}>另存新方案</button></div>`;
-    if(S.plan.id&&list.some(x=>x.id===S.plan.id))h+=`<button class="tb" data-p="over" style="width:100%"${busy?' disabled':''}>覆寫「${esc(S.plan.name)}」</button>`}
-  if(m==='cloud'||m==='local'){h+=`<ul class="pl">${list.length?list.map(p=>{const d=p.data||{},n=String(d.name||'未命名'),c=Array.isArray(d.items)?d.items.length:0;return`<li class="${p.id===S.plan.id?'cur':''}"><div class="pn"><b>${esc(n)}</b><small>${esc(fmtT(d.updatedAt))} · ${c} 件</small></div><button class="tb" data-p="load" data-id="${esc(p.id)}">載入</button>${ro?'':`<button class="tb dz" data-p="rm" data-id="${esc(p.id)}">刪除</button>`}</li>`}).join(''):`<li><span class="note">${m==='cloud'&&(plansState==='slow'||plansState==='err')?'暫時讀不到雲端方案，稍後再開一次。':'還沒有存過方案。'}</span></li>`}</ul>`}
-  h+=`<hr><div class="row2">${DL||STANDALONE?'<button class="tb" data-p="export" style="flex:1">匯出方案檔</button>':''}<button class="tb" data-p="import" style="flex:1">匯入方案檔</button></div><input type="file" id="importFile" accept=".json,application/json" hidden><div class="row2"><button class="tb dz" data-p="clear" style="flex:1">清空場地</button></div>`;
+const defName=()=>{const d=new Date();return`配置 ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
+const nameIn=fb=>(((($('#pName')||{}).value||'').trim())||fb||defName()).slice(0,40);
+function authorIn(){const el=$('#pAuthor');if(el){const v=el.value.trim().slice(0,20);setAuthor(v);return v}return getAuthor()}
+const isCur=m=>!!S.plan.id&&S.plan.src===m;
+function renderPlans(){const m=storeMode(),ro=m==='cloud'&&CANW===false;
+  if(m==='team'&&TL.view==='versions')return renderVersions();
+  if(m==='team'&&TL.view==='trash')return renderTrash();
+  const list=m==='team'?(TL.rows||[]):plansList();
+  const note={team:'共用檔案庫：拿到這個網址的人都看得到、都能存檔，不用密碼。每次存檔都會多一個版本，不會蓋掉舊的；刪掉的檔案可以從「最近刪除」救回來。',
+    cloud:'檔案存在這個頁面的雲端資料庫：分享頁面後，對方也看得到、能開啟。',
+    local:STANDALONE&&TEAM==='down'?'連不到共用檔案庫，先存在這台裝置的瀏覽器。網路恢復後按「重新連線」。':'檔案存在這台裝置的瀏覽器裡，換裝置或換瀏覽器就看不到。',
+    loading:'正在連線檔案庫…',none:'這個檢視沒辦法存檔，請用「匯出檔案」保存。'}[m];
+  let h=`<p class="note">目前：<b>${esc(S.plan.name||'未命名')}</b>${isCur(m)?(S.dirty?' · 有未存檔的變更':' · 已存檔'):' · 還沒存進這個檔案庫'}</p><p class="note">${note}</p>`;
+  if(m==='local'&&STANDALONE&&TEAM==='down')h+='<button class="tb" data-p="treconnect" style="width:100%">重新連線共用檔案庫</button>';
+  if(m==='team'&&TL.conflict){const c=TL.conflict;h+=`<div class="conf"><b>${esc(c.author||'有人')} 在 ${esc(fmtT(c.saved_at))} 存過這個檔案</b><p class="note">你打開之後，這個檔案已經有更新的版本。仍要存成最新版嗎？對方那一版會留在版本紀錄裡，不會不見。</p><div class="row2"><button class="tb pri" data-p="tforce" style="flex:1"${busy?' disabled':''}>仍要存</button><button class="tb" data-p="tnew" style="flex:1"${busy?' disabled':''}>另存新檔</button></div></div>`}
+  if(ro)h+='<p class="note">你目前只有檢視權限，可以開啟，不能存檔。</p>';
+  else if(m==='team'||m==='cloud'||m==='local'){
+    if(m==='team')h+=`<label class="fl">你的名字（選填，存檔時會顯示）<input type="text" id="pAuthor" maxlength="20" value="${esc(getAuthor())}" autocomplete="name"></label>`;
+    h+=`<label class="fl">檔名<span class="row2" style="margin:4px 0 0"><input type="text" id="pName" maxlength="40" placeholder="${esc(defName())}" value="${esc(S.plan.name||'')}"><button class="tb pri" type="button" data-p="${m==='team'?'tnew':'new'}"${busy?' disabled':''}>另存新檔</button></span></label>`;
+    if(isCur(m)&&(m==='team'||list.some(x=>x.id===S.plan.id)))h+=`<button class="tb" data-p="${m==='team'?'tsave':'over'}" style="width:100%"${busy?' disabled':''}>${m==='team'?'存成新版本':'覆寫'}「${esc(S.plan.name)}」</button>`}
+  if(m==='team'){
+    h+=`<ul class="pl">${TL.rows===null?`<li><span class="note">${TL.err?'讀不到檔案庫，按「重新整理」再試。':'讀取中…'}</span></li>`:list.length?list.map(p=>{const cur=isCur('team')&&p.id===S.plan.id;
+      return`<li class="${cur?'cur':''}"><div class="pn"><b>${esc(p.name||'未命名')}</b><small>${esc(fmtT(p.updated_at))}${p.author?' · '+esc(p.author):''} · ${+p.item_count||0} 件 · ${+p.versions||1} 版${cur&&S.plan.vid&&p.latest_vid!==S.plan.vid?' · <em class="tagnew">有更新的版本</em>':''}</small></div><button class="tb" data-p="topen" data-id="${esc(p.id)}">開啟</button><button class="tb" data-p="tver" data-id="${esc(p.id)}" data-name="${esc(p.name||'')}">版本</button><button class="tb dz" data-p="trm" data-id="${esc(p.id)}">刪除</button></li>`}).join(''):'<li><span class="note">還沒有任何檔案，存第一個吧。</span></li>'}</ul>
+      <div class="row2"><button class="tb" data-p="tref" style="flex:1">重新整理</button><button class="tb" data-p="ttrash" style="flex:1">最近刪除</button></div>`}
+  else if(m==='cloud'||m==='local'){h+=`<ul class="pl">${list.length?list.map(p=>{const d=p.data||{},n=String(d.name||'未命名'),c=Array.isArray(d.items)?d.items.length:0;return`<li class="${isCur(m)&&p.id===S.plan.id?'cur':''}"><div class="pn"><b>${esc(n)}</b><small>${esc(fmtT(d.updatedAt))} · ${c} 件</small></div><button class="tb" data-p="load" data-id="${esc(p.id)}">開啟</button>${ro?'':`<button class="tb dz" data-p="rm" data-id="${esc(p.id)}">刪除</button>`}</li>`}).join(''):`<li><span class="note">${m==='cloud'&&(plansState==='slow'||plansState==='err')?'暫時讀不到雲端檔案，稍後再開一次。':'還沒有存過檔案。'}</span></li>`}</ul>`}
+  h+=`<hr><div class="row2">${saveFileOK()?'<button class="tb" data-p="export" style="flex:1">匯出檔案（.json）</button>':''}<button class="tb" data-p="import" style="flex:1">匯入檔案</button></div><input type="file" id="importFile" accept=".json,application/json" hidden><div class="row2"><button class="tb dz" data-p="clear" style="flex:1">清空場地</button></div>`;
   mBody.innerHTML=h}
+function renderVersions(){const v=TL.vrows;mBody.innerHTML=`<button class="linkb" data-p="tback">‹ 回檔案庫</button><p class="note"><b>${esc(TL.pname)}</b> 的版本紀錄，最新的在最上面。開啟舊版本後再存檔，它會變成最新版，其他版本都還在。</p>
+  <ul class="pl">${v===null?'<li><span class="note">讀取中…</span></li>':v==='err'?'<li><span class="note">讀不到版本紀錄，稍後再試。</span></li>':v.map((x,i)=>`<li><div class="pn"><b>${i===0?'最新 · ':''}${esc(fmtT(x.saved_at))}</b><small>${x.author?esc(x.author)+' · ':''}${esc(x.name)} · ${+x.item_count||0} 件</small></div><button class="tb" data-p="tvopen" data-vid="${+x.vid}">開啟這版</button></li>`).join('')}</ul>`}
+function renderTrash(){const t=TL.trash;mBody.innerHTML=`<button class="linkb" data-p="tback">‹ 回檔案庫</button><p class="note">刪掉的檔案在這裡，按「復原」就會回到檔案庫，版本紀錄也都在。</p>
+  <ul class="pl">${t===null?'<li><span class="note">讀取中…</span></li>':t==='err'?'<li><span class="note">讀不到，稍後再試。</span></li>':t.length?t.map(p=>`<li><div class="pn"><b>${esc(p.name||'未命名')}</b><small>刪除於 ${esc(fmtT(p.deleted_at))} · ${+p.item_count||0} 件</small></div><button class="tb" data-p="trestore" data-id="${esc(p.id)}">復原</button></li>`).join(''):'<li><span class="note">沒有刪除的檔案。</span></li>'}</ul>`}
+async function teamSaveNew(){if(busy)return;const name=nameIn(''),author=authorIn();busy=true;renderModal();
+  try{const j=await api('/plans',{method:'POST',body:{id:newId(),name,author,data:payload()}});S.plan={id:j.id,name,vid:j.vid,src:'team'};S.dirty=false;TL.conflict=null;saveDraft();toast(`已存檔「${name}」`);loadTeamList()}
+  catch(e){toast(teamErr(e))}finally{busy=false;refreshUI();renderModal()}}
+async function teamSaveVersion(force){if(busy||!S.plan.id)return;const name=modalKind==='plans'?nameIn(S.plan.name):S.plan.name,author=authorIn();busy=true;renderModal();
+  try{const j=await api('/plans/'+S.plan.id,{method:'PUT',body:{name,author,base_vid:Number.isInteger(S.plan.vid)?S.plan.vid:null,force:!!force,data:payload()}});
+    S.plan={id:S.plan.id,name,vid:j.vid,src:'team'};S.dirty=false;TL.conflict=null;saveDraft();toast(`已存檔「${name}」`);if(modalKind==='plans')loadTeamList()}
+  catch(e){if(e.status===409){TL.conflict=(e.body&&e.body.latest)||{};if(modalKind!=='plans')openLibrary();else loadTeamList()}
+    else if(e.status===410||e.status===404){S.plan={id:null,name:S.plan.name,src:''};toast('這個檔案已被刪除，請另存新檔')}else toast(teamErr(e))}
+  finally{busy=false;refreshUI();renderModal()}}
+function openTeam(j,latestVid){applyData(clean(j.data));S.plan={id:j.id,name:String(j.name||'未命名').slice(0,40),vid:latestVid!=null?latestVid:j.vid,src:'team'};
+  S.dirty=latestVid!=null&&latestVid!==j.vid;resetHistory();saveDraft();closeModal();toast(S.dirty?'已開啟舊版本，存檔後會成為最新版':`已開啟「${S.plan.name}」`)}
+async function teamClick(p,b){
+  if(p==='tnew')return teamSaveNew();
+  if(p==='tsave')return teamSaveVersion(false);
+  if(p==='tforce')return teamSaveVersion(true);
+  if(p==='treconnect')return checkTeam();
+  if(p==='tref'){TL.err=false;await loadTeamList();toast('已更新清單');return}
+  if(p==='tback'){TL.view='list';renderPlans();loadTeamList();return}
+  if(p==='topen'){const id=b.dataset.id;if(S.dirty&&S.items.length&&!confirmTap(b,'to'+id,'確定開啟？'))return;b.disabled=true;
+    try{openTeam(await api('/plans/'+id))}catch(e){toast(e.status?'讀取失敗':'連不到檔案庫');b.disabled=false}return}
+  if(p==='tver'){TL.view='versions';TL.pid=b.dataset.id;TL.pname=b.dataset.name||'';TL.vrows=null;renderPlans();
+    try{const j=await api('/plans/'+TL.pid+'/versions');TL.vrows=Array.isArray(j.versions)?j.versions:[]}catch(e){TL.vrows='err'}if(modalKind==='plans'&&TL.view==='versions')renderPlans();return}
+  if(p==='tvopen'){if(S.dirty&&S.items.length&&!confirmTap(b,'tv'+b.dataset.vid,'確定開啟？'))return;b.disabled=true;
+    try{const j=await api('/plans/'+TL.pid+'/versions/'+(+b.dataset.vid));openTeam(j,Array.isArray(TL.vrows)&&TL.vrows[0]?TL.vrows[0].vid:j.vid)}catch(e){toast('讀取失敗');b.disabled=false}return}
+  if(p==='trm'){const id=b.dataset.id;if(!confirmTap(b,'tr'+id,'確定刪除？'))return;
+    try{await api('/plans/'+id,{method:'DELETE'});if(isCur('team')&&S.plan.id===id){S.plan={id:null,name:S.plan.name,src:''};refreshUI()}toast('已移到「最近刪除」');loadTeamList()}catch(e){toast('刪除失敗')}return}
+  if(p==='ttrash'){TL.view='trash';TL.trash=null;renderPlans();try{const j=await api('/plans?deleted=1');TL.trash=Array.isArray(j.plans)?j.plans:[]}catch(e){TL.trash='err'}if(modalKind==='plans'&&TL.view==='trash')renderPlans();return}
+  if(p==='trestore'){b.disabled=true;try{await api('/plans/'+b.dataset.id+'/restore',{method:'POST'});toast('已復原');const j=await api('/plans?deleted=1');TL.trash=Array.isArray(j.plans)?j.plans:[]}catch(e){toast('復原失敗')}if(TL.view==='trash')renderPlans();return}}
+async function saveCL(m,asNew){if(busy)return;const name=nameIn(asNew?'':S.plan.name),d=payload(),body={name,items:d.items,custom:d.custom,count:d.items.length,updatedAt:Date.now()};
+  if(m==='cloud'){body.by=UID||null;busy=true;renderModal();
+    try{const ref=!asNew&&isCur('cloud')?DB.doc('plans/'+S.plan.id):DB.collection('plans').doc();await ref.set(body);S.plan={id:ref.id,name,src:'cloud'};S.dirty=false;saveDraft();toast(`已存檔「${name}」`)}
+    catch(err){const c=err&&err.code;if(c==='invalid_argument'){CANW=false;toast('沒有寫入權限，無法存檔')}else toast(c==='quota_exceeded'?'雲端空間已滿，請先刪掉舊檔案':'存檔失敗，請稍後再試')}
+    finally{busy=false;refreshUI();renderModal()}return}
+  const list=localPlans()||[],id=!asNew&&isCur('local')&&list.some(x=>x.id===S.plan.id)?S.plan.id:'L'+Date.now().toString(36),rec={id,...body},i=list.findIndex(x=>x.id===id);if(i>=0)list[i]=rec;else list.push(rec);
+  if(!setLocalPlans(list)){toast('這台裝置存不下，請改用「匯出檔案」');return}S.plan={id,name,src:'local'};S.dirty=false;saveDraft();toast(`已存檔「${name}」`);refreshUI();renderModal()}
+async function quickSave(){const m=storeMode();
+  if(m==='loading'){toast('正在連線檔案庫，稍等一下');if(STANDALONE)checkTeam();return}
+  if(isCur(m)){if(m==='team')return teamSaveVersion(false);if(m==='cloud'||m==='local')return saveCL(m,false)}
+  openLibrary();setTimeout(()=>{const n=$('#pName');if(n){n.focus();n.select()}},80)}
 const armed=new Map();
 function confirmTap(btn,key,label){if(armed.get(key)>Date.now())return true;armed.set(key,Date.now()+3000);btn.textContent=label;setTimeout(()=>{if(modalKind)renderModal()},3000);return false}
-mBody.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const p=b.dataset.p;
-  if(p==='new'||p==='over'){const m=storeMode();if((m!=='cloud'&&m!=='local')||busy)return;
-    const name=((($('#pName')||{}).value||'').trim()||(p==='over'?S.plan.name:'')||defName()).slice(0,40);
-    const d=JSON.parse(snapshot());const body={name,items:d.items,custom:d.custom,count:d.items.length,updatedAt:Date.now()};
-    if(m==='cloud'){body.by=UID||null;busy=true;renderPlans();
-      try{const ref=p==='over'&&S.plan.id?DB.doc('plans/'+S.plan.id):DB.collection('plans').doc();await ref.set(body);S.plan={id:ref.id,name};S.dirty=false;saveDraft();toast(`已儲存「${name}」`)}
-      catch(err){const c=err&&err.code;if(c==='invalid_argument'){CANW=false;toast('沒有寫入權限，無法儲存')}else toast(c==='quota_exceeded'?'雲端空間已滿，請先刪掉舊方案':'儲存失敗，請稍後再試')}
-      finally{busy=false;refreshUI();renderModal()}}
-    else{const list=localPlans()||[];const id=p==='over'&&S.plan.id&&list.some(x=>x.id===S.plan.id)?S.plan.id:'L'+Date.now().toString(36);const rec={id,...body},i=list.findIndex(x=>x.id===id);if(i>=0)list[i]=rec;else list.push(rec);
-      if(!setLocalPlans(list)){toast('這台裝置存不下，請改用「匯出方案檔」');return}S.plan={id,name};S.dirty=false;saveDraft();toast(`已儲存「${name}」`);refreshUI();renderModal()}}
-  else if(p==='load'){const pl=plansList().find(x=>x.id===b.dataset.id);if(!pl)return;if(S.dirty&&S.items.length&&!confirmTap(b,'load'+pl.id,'確定載入？'))return;
-    applyData(clean(pl.data));S.plan={id:pl.id,name:String(pl.data.name||'未命名').slice(0,40)};S.dirty=false;resetHistory();saveDraft();closeModal();toast(`已載入「${S.plan.name}」`)}
-  else if(p==='rm'){const id=b.dataset.id;if(!confirmTap(b,'rm'+id,'確定刪除？'))return;
-    try{if(DB)await DB.doc('plans/'+id).delete();else setLocalPlans((localPlans()||[]).filter(x=>x.id!==id));if(S.plan.id===id){S.plan={id:null,name:''};refreshUI()}toast('已刪除方案');renderModal()}catch(err){toast('刪除失敗')}}
-  else if(p==='export'){const d=JSON.parse(snapshot()),name=S.plan.name||'草稿';
+mBody.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||!b.dataset.p)return;const p=b.dataset.p;
+  if(p[0]==='t')return teamClick(p,b);
+  if(p==='new'||p==='over'){const m=storeMode();if(m==='cloud'||m==='local')saveCL(m,p==='new');return}
+  if(p==='load'){const pl=plansList().find(x=>x.id===b.dataset.id);if(!pl)return;if(S.dirty&&S.items.length&&!confirmTap(b,'load'+pl.id,'確定開啟？'))return;
+    applyData(clean(pl.data));S.plan={id:pl.id,name:String(pl.data.name||'未命名').slice(0,40),src:storeMode()};S.dirty=false;resetHistory();saveDraft();closeModal();toast(`已開啟「${S.plan.name}」`);return}
+  if(p==='rm'){const id=b.dataset.id;if(!confirmTap(b,'rm'+id,'確定刪除？'))return;
+    try{if(DB)await DB.doc('plans/'+id).delete();else setLocalPlans((localPlans()||[]).filter(x=>x.id!==id));if(S.plan.id===id){S.plan={id:null,name:'',src:''};refreshUI()}toast('已刪除');renderModal()}catch(err){toast('刪除失敗')}return}
+  if(p==='export'){const d=payload(),name=S.plan.name||'草稿';
     const txt=JSON.stringify({app:'exhibit-layout-planner',version:1,name,units:'公尺／度；原點＝上段展區左上角',exportedAt:new Date().toISOString(),...d},null,1);
-    const r=await saveFile(`展場配置-${safeName(name)||'草稿'}.json`,new Blob([txt],{type:'application/json'}));toast(r==='ok'?'已匯出方案檔':fileMsg[r])}
-  else if(p==='import')$('#importFile').click();
-  else if(p==='clear'){if(!S.items.length)return;if(!confirmTap(b,'clear','再按一次清空'))return;S.items.forEach(i=>dropMesh(i.uid));S.items=[];S.sel=null;syncAll();commit();closeModal();toast('已清空，可用「復原」找回')}});
+    const r=await saveFile(`展場配置-${safeName(name)||'草稿'}.json`,new Blob([txt],{type:'application/json'}));toast(r==='ok'?'已匯出檔案':fileMsg[r]);return}
+  if(p==='import'){$('#importFile').click();return}
+  if(p==='clear'){if(!S.items.length)return;if(!confirmTap(b,'clear','再按一次清空'))return;S.items.forEach(i=>dropMesh(i.uid));S.items=[];S.sel=null;syncAll();commit();closeModal();toast('已清空，可用「復原」找回')}});
 mBody.addEventListener('change',async e=>{if(e.target.id!=='importFile')return;const f=e.target.files&&e.target.files[0];if(!f)return;
   try{const o=JSON.parse(await f.text()),d=clean(o);if(!d.items.length&&!d.custom.length)throw 0;applyData(d);
-    S.plan={id:null,name:safeName(o&&o.name)||safeName(f.name.replace(/\.json$/i,''))||'匯入的方案'};S.dirty=true;resetHistory();saveDraft();closeModal();toast(`已匯入「${S.plan.name}」，共 ${d.items.length} 件`)}
+    S.plan={id:null,name:safeName(o&&o.name)||safeName(f.name.replace(/\.json$/i,''))||'匯入的配置',src:''};S.dirty=true;resetHistory();saveDraft();closeModal();toast(`已匯入「${S.plan.name}」，共 ${d.items.length} 件`)}
   catch(err){toast('這個檔案讀不出配置')}});
+mBody.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='pName'){e.preventDefault();const b=mBody.querySelector('[data-p=tnew],[data-p=new]');if(b)b.click()}});
 function openCustom(){openModal('custom','新增自訂器材')}
 function renderCustom(){mBody.innerHTML=`<form class="form" id="cf"><label>編號<input type="text" name="code" maxlength="12" required placeholder="例如 W1"></label><label class="w2">名稱<input type="text" name="name" maxlength="30" placeholder="例如 作品底板"></label>
   <label>寬 W (cm)<input type="number" name="w" min="1" max="1200" step="1" value="60" inputmode="numeric"></label><label>深 D (cm)<input type="number" name="d" min="1" max="1200" step="1" value="60" inputmode="numeric"></label><label>高 H (cm)<input type="number" name="h" min="1" max="600" step="1" value="90" inputmode="numeric"></label>
@@ -4492,7 +4574,7 @@ $('#exportBtn').onclick=async()=>{if(!DL&&!STANDALONE)return;S.sel=null;syncAll(
   x.textAlign='left';x.font=`500 ${13*s}px "Noto Sans TC",sans-serif`;const cap=`${S.plan.name||'展場配置'} · ${new Date().toLocaleDateString('zh-TW')} · 每格 1 m · 牆高 3.5 m`;x.lineWidth=4*s;x.strokeStyle='rgba(255,255,255,.9)';x.strokeText(cap,14*s,gl.height-12*s);x.fillStyle='#17353a';x.fillText(cap,14*s,gl.height-12*s);
   const blob=await new Promise(r=>c.toBlob(r,'image/png'));if(!blob){toast('圖片產生失敗');return}
   const r=await saveFile(`展場配置-${safeName(S.plan.name)||'草稿'}.png`,blob);toast(r==='ok'?'圖片已存':fileMsg[r])};
-async function initCaps(){if(STANDALONE){plansState='local';$('#exportBtn').hidden=false;if(modalKind)renderModal();return}
+async function initCaps(){if(STANDALONE){plansState='local';$('#exportBtn').hidden=false;checkTeam();return}
   try{const C=window.claude,[db,user,dl]=await Promise.all([C.use('db'),C.use('user'),C.use('downloads')]);DL=dl;$('#exportBtn').hidden=!dl;
     if(user){try{UID=await user.id();CANW=await user.can('data.write')}catch(e){}}
     DB=db;if(!DB){plansState='off';if(modalKind)renderModal();return}
